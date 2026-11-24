@@ -313,4 +313,24 @@ function App() {
             </div>
           ))}
         </div></div>
-   
+      ) : (
+        <div className="page-content"><div className="card"><h1 className="card-title">Easy Guide</h1>
+          <p><strong>Fundamental Score:</strong> How strong and profitable the company is.</p>
+          <p><strong>Technical Score:</strong> Whether the recent price trend is moving up or down.</p>
+          <p><strong>Risk Score:</strong> Lower number means calmer price movement and lower debt.</p>
+          <p><strong>Data Confidence:</strong> Tells you whether prices are sample placeholders or live verified filings.</p>
+          <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Charts powered by <a href="https://www.tradingview.com" target="_blank" rel="noreferrer">TradingView Lightweight Charts™</a>.</p>
+        </div></div>
+      )}
+
+      <nav className="bottom-nav">
+        <button type="button" className={`nav-item ${tab === 'home' && !selectedSymbol ? 'active' : ''}`} onClick={() => { setSelectedSymbol(null); setTab('home'); }}><Home size={20} />Home</button>
+        <button type="button" className={`nav-item ${tab === 'watchlist' && !selectedSymbol ? 'active' : ''}`} onClick={() => { setSelectedSymbol(null); setTab('watchlist'); }}><Bookmark size={20} />Watchlist</button>
+        <button type="button" className={`nav-item ${tab === 'reports' && !selectedSymbol ? 'active' : ''}`} onClick={() => { setSelectedSymbol(null); setTab('reports'); }}><FileText size={20} />Reports</button>
+        <button type="button" className={`nav-item ${tab === 'guide' && !selectedSymbol ? 'active' : ''}`} onClick={() => { setSelectedSymbol(null); setTab('guide'); }}><Info size={20} />Guide</button>
+      </nav>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
