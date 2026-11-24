@@ -317,3 +317,119 @@ const SAMPLE_SEEDS = [
     startPrice: 465, seed: 505,
     fundamentals: { fiscalPeriod: 'Sample Baseline (Non-Live)', marketCapCr: 590000, peRatio: 27.9, sectorPeRatio: 42.0, pbRatio: 8.0, roePct: 28.4, rocePct: 36.2, debtToEquity: 0.01, revenueGrowth3YrPct: 8.9, profitGrowth3YrPct: 11.4, operatingMarginPct: 34.5, dividendYieldPct: 2.9, freeCashFlowCr: 16400, sourceName: 'Phase 1 Sample Fixture', sourceUrl: 'https://www.bseindia.com/', isSampleData: true },
     competitors: [{ nseSymbol: 'HINDUNILVR', name: 'HUL', marketCapCr: 580000, peRatio: 54.2, roePct: 20.1, debtToEquity: 0.03 }],
+    announcements: [{ id: '5', exchange: 'NSE' as const, category: 'Dividend', title: 'Sample Filing: FMCG Business & Dividend Update', plainSummary: 'Sample placeholder showing FMCG business and dividend filing.', publishedAt: '2026-10-12T14:20:00+05:30', sourceName: 'Sample Placeholder', sourceUrl: 'https://www.nseindia.com/', isSampleData: true }],
+  },
+];
+
+export const SAMPLE_INDICES: MarketIndexSnapshot[] = [
+  { name: 'NIFTY 50', symbol: 'NIFTY50', value: 24380.45, change: 142.3, changePct: 0.59, asOfTimestamp: '2026-11-24T15:30:00+05:30', sourceName: 'Sample Fixture', isSampleData: true },
+  { name: 'BSE SENSEX', symbol: 'SENSEX', value: 80120.8, change: 418.6, changePct: 0.53, asOfTimestamp: '2026-11-24T15:30:00+05:30', sourceName: 'Sample Fixture', isSampleData: true },
+  { name: 'NIFTY BANK', symbol: 'BANKNIFTY', value: 52140.15, change: -95.4, changePct: -0.18, asOfTimestamp: '2026-11-24T15:30:00+05:30', sourceName: 'Sample Fixture', isSampleData: true },
+];
+
+export const SAMPLE_RECENT_REPORTS: SavedReportSummary[] = [
+  {
+    id: 'sample-rep-1',
+    nseSymbol: 'TCS',
+    companyName: 'Tata Consultancy Services Ltd.',
+    mode: 'investment',
+    priceAtReport: 3920.5,
+    fundamentalScore: 86,
+    technicalScore: 62,
+    riskScore: 30,
+    confidenceScore: 30,
+    createdAt: '2026-11-20T10:30:00+05:30',
+    isSampleData: true,
+  },
+  {
+    id: 'sample-rep-2',
+    nseSymbol: 'HDFCBANK',
+    companyName: 'HDFC Bank Ltd.',
+    mode: 'trading',
+    priceAtReport: 1710.2,
+    fundamentalScore: 68,
+    technicalScore: 55,
+    riskScore: 30,
+    confidenceScore: 25,
+    createdAt: '2026-11-18T14:15:00+05:30',
+    isSampleData: true,
+  },
+];
+
+export function searchSampleCompanies(query: string): CompanyProfile[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return SAMPLE_SEEDS.map((s) => s.company);
+  return SAMPLE_SEEDS
+    .filter((s) =>
+      s.company.nseSymbol.toLowerCase().includes(q) ||
+      s.company.bseCode.toLowerCase().includes(q) ||
+      s.company.name.toLowerCase().includes(q) ||
+      s.company.sector.toLowerCase().includes(q) ||
+      s.company.isin.toLowerCase().includes(q)
+    )
+    .map((s) => s.company);
+}
+
+export function buildSampleResearchBundle(symbol: string, mode: AnalysisMode): StockResearchBundle | null {
+  const target = symbol.trim().toUpperCase();
+  const seedEntry = SAMPLE_SEEDS.find(
+    (s) => s.company.nseSymbol === target || s.company.bseCode === target || s.company.isin === target
+  );
+  if (!seedEntry) return null;
+
+  const bars = generateSampleBars(seedEntry.startPrice, seedEntry.seed);
+  const lastBar = bars[bars.length - 1]!;
+  const prevBar = bars[bars.length - 2] ?? lastBar;
+  const changeInr = Number((lastBar.close - prevBar.close).toFixed(2));
+  const changePct = prevBar.close > 0 ? Number(((changeInr / prevBar.close) * 100).toFixed(2)) : 0;
+
+  const quote: PriceSnapshot = {
+    exchange: 'NSE',
+    priceInr: lastBar.close,
+    changeInr,
+    changePct,
+    openInr: lastBar.open,
+    highInr: lastBar.high,
+    lowInr: lastBar.low,
+    prevCloseInr: prevBar.close,
+    volume: lastBar.volume,
+    asOfTimestamp: `${lastBar.time}T15:30:00+05:30`,
+    sourceName: 'Phase 1 Sample Fixture',
+    isSampleData: true,
+    isStale: true,
+  };
+
+  const technicals = computeTechnicalSummary(bars);
+  const scores = calculateDeterministicScores(seedEntry.fundamentals, technicals);
+  const confidence = calculateDataConfidence(quote, seedEntry.fundamentals, bars.length);
+
+  const plainLanguageSummary =
+    mode === 'investment'
+      ? `${seedEntry.company.name} scores ${scores.fundamentalScore}/100 on business fundamentals with a ${scores.riskScore <= 35 ? 'lower' : scores.riskScore <= 60 ? 'moderate' : 'higher'} risk score (${scores.riskScore}/100).`
+      : `${seedEntry.company.nseSymbol} currently shows a ${technicals.trendLabel.toLowerCase()} trend with a technical score of ${scores.technicalScore}/100 and RSI-14 at ${technicals.rsi14 ?? 'N/A'}.`;
+
+  const aiConclusion: AIResearchConclusion = {
+    mode,
+    plainLanguageSummary,
+    keyStrengths: scores.fundamentalReasons.slice(0, 2),
+    keyRisks: scores.riskReasons.slice(0, 2),
+    whatToWatchNext: ['Quarterly earnings & revenue growth', '20-day vs 50-day moving average trend'],
+    generatedByProvider: 'StockWise Rule Engine',
+    generatedByModel: 'Deterministic-v1',
+    isFallbackRuleBased: true,
+    disclaimer: 'Educational sample summary only — not live market data or SEBI-registered financial advice.',
+  };
+
+  return {
+    company: seedEntry.company,
+    quote,
+    bars,
+    fundamentals: seedEntry.fundamentals,
+    technicals,
+    scores,
+    confidence,
+    competitors: seedEntry.competitors,
+    announcements: seedEntry.announcements,
+    aiConclusion,
+  };
+}
